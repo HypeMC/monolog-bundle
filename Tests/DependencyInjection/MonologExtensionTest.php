@@ -15,6 +15,7 @@ use InvalidArgumentException;
 use Monolog\Handler\FingersCrossed\ErrorLevelActivationStrategy;
 use Monolog\Handler\RollbarHandler;
 use Monolog\Logger;
+use Monolog\Processor\PsrLogMessageProcessor;
 use Monolog\Processor\UidProcessor;
 use Symfony\Bridge\Monolog\Processor\SwitchUserTokenProcessor;
 use Symfony\Bundle\MonologBundle\DependencyInjection\MonologExtension;
@@ -763,6 +764,35 @@ class MonologExtensionTest extends DependencyInjectionTest
         $this->assertIsArray($tags['kernel.reset'][0]);
         $this->assertArrayHasKey('method', $tags['kernel.reset'][0]);
         $this->assertEquals('reset', $tags['kernel.reset'][0]['method']);
+    }
+
+    public function testPsrLogMessageProcessor()
+    {
+        $container = $this->getContainer([
+            [
+                'handlers' => [
+                    'main' => [
+                        'type' => 'stream',
+                        'path' => '/foo/bar',
+                        'process_psr_3_messages' => [
+                            'date_format' => 'Y',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($container->hasDefinition('monolog.processor.psr_log_message'));
+
+        $args = [];
+
+        $constructor = (new \ReflectionClass(PsrLogMessageProcessor::class))->getConstructor();
+        if ((null !== $constructor) && $constructor->getNumberOfParameters()) {
+            $args = ['Y', false];
+        }
+
+        $processor = $container->getDefinition('monolog.processor.psr_log_message');
+        $this->assertDICConstructorArguments($processor, $args);
     }
 
     protected function getContainer(array $config = [], array $thirdPartyDefinitions = [])

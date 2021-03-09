@@ -186,15 +186,23 @@ class MonologExtension extends Extension
             $definition->setConfigurator(['Symfony\\Bundle\\MonologBundle\\MonologBundle', 'includeStacktraces']);
         }
 
-        if (null === $handler['process_psr_3_messages']) {
-            $handler['process_psr_3_messages'] = !isset($handler['handler']) && !$handler['members'];
+        if (null === $handler['process_psr_3_messages']['enabled']) {
+            $handler['process_psr_3_messages']['enabled'] = !isset($handler['handler']) && !$handler['members'];
         }
 
-        if ($handler['process_psr_3_messages']) {
+        if ($handler['process_psr_3_messages']['enabled']) {
             $processorId = 'monolog.processor.psr_log_message';
             if (!$container->hasDefinition($processorId)) {
                 $processor = new Definition('Monolog\\Processor\\PsrLogMessageProcessor');
                 $processor->setPublic(false);
+                $r = (new \ReflectionClass('Monolog\\Processor\\PsrLogMessageProcessor'));
+                if ((null !== $constructor = $r->getConstructor()) && $constructor->getNumberOfParameters()) {
+                    $processor->setArguments([
+                        $handler['process_psr_3_messages']['date_format'],
+                        $handler['process_psr_3_messages']['remove_used_context_fields'],
+                    ]);
+                }
+                unset($r);
                 $container->setDefinition($processorId, $processor);
             }
 
