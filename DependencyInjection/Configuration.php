@@ -971,6 +971,12 @@ class Configuration implements ConfigurationInterface
                         ]
                     ])
                 ->end()
+                ->arrayNode('psr_log_message_processor')
+                    ->children()
+                        ->scalarNode('date_format')->defaultNull()->end()
+                        ->booleanNode('remove_used_context_fields')->defaultFalse()->end()
+                    ->end()
+                ->end()
             ->end()
         ;
 

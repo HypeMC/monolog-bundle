@@ -97,7 +97,7 @@ class MonologExtension extends Extension
 
             foreach ($config['handlers'] as $name => $handler) {
                 $handlers[$handler['priority']][] = [
-                    'id' => $this->buildHandler($container, $name, $handler),
+                    'id' => $this->buildHandler($container, $name, $handler, $config['psr_log_message_processor']),
                     'channels' => empty($handler['channels']) ? null : $handler['channels'],
                 ];
             }
@@ -164,7 +164,7 @@ class MonologExtension extends Extension
         return 'http://symfony.com/schema/dic/monolog';
     }
 
-    private function buildHandler(ContainerBuilder $container, $name, array $handler)
+    private function buildHandler(ContainerBuilder $container, $name, array $handler, array $psrLogMessageProcessor)
     {
         $handlerId = $this->getHandlerId($name);
         if ('service' === $handler['type']) {
@@ -195,6 +195,14 @@ class MonologExtension extends Extension
             if (!$container->hasDefinition($processorId)) {
                 $processor = new Definition('Monolog\\Processor\\PsrLogMessageProcessor');
                 $processor->setPublic(false);
+                $r = (new \ReflectionClass('Monolog\\Processor\\PsrLogMessageProcessor'));
+                if ((null !== $constructor = $r->getConstructor()) && $constructor->getNumberOfParameters()) {
+                    $processor->setArguments([
+                        $psrLogMessageProcessor['date_format'],
+                        $psrLogMessageProcessor['remove_used_context_fields'],
+                    ]);
+                }
+                unset($r);
                 $container->setDefinition($processorId, $processor);
             }
 
